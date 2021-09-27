@@ -9,6 +9,9 @@ import { BaseConnection } from "./baseconnection";
  * Manages all negotiations between Peers.
  */
 export class Negotiator {
+  private earlyCandidates: any[] = [];  // cache candidates that comes before remote description is set
+  private remoteDescriptionIsSet: boolean = false;
+
   constructor(readonly connection: BaseConnection) { }
 
   /** Returns a PeerConnection object set up correctly (for data, media). */
@@ -294,7 +297,17 @@ export class Negotiator {
 
     try {
       await peerConnection.setRemoteDescription(sdp);
+      this.remoteDescriptionIsSet = true;
       logger.log(`Set remoteDescription:${type} for:${this.connection.peer}`);
+
+      if (this.earlyCandidates.length > 0) {    // handle all early candidates if there are
+        logger.log(`There are ${this.earlyCandidates.length} early candidates, handle them now...`);
+        this.earlyCandidates.forEach(ice => {
+            this.handleCandidate(ice);
+        });
+        this.earlyCandidates = []
+      }
+
       if (type === "OFFER") {
         await self._makeAnswer();
       }
@@ -307,25 +320,29 @@ export class Negotiator {
   /** Handle a candidate. */
   async handleCandidate(ice: any): Promise<void> {
     logger.log(`handleCandidate:`, ice);
+    if (this.remoteDescriptionIsSet) {
+        const candidate = ice.candidate;
+        const sdpMLineIndex = ice.sdpMLineIndex;
+        const sdpMid = ice.sdpMid;
+        const peerConnection = this.connection.peerConnection;
+        const provider = this.connection.provider;
 
-    const candidate = ice.candidate;
-    const sdpMLineIndex = ice.sdpMLineIndex;
-    const sdpMid = ice.sdpMid;
-    const peerConnection = this.connection.peerConnection;
-    const provider = this.connection.provider;
-
-    try {
-      await peerConnection.addIceCandidate(
-        new RTCIceCandidate({
-          sdpMid: sdpMid,
-          sdpMLineIndex: sdpMLineIndex,
-          candidate: candidate
-        })
-      );
-      logger.log(`Added ICE candidate for:${this.connection.peer}`);
-    } catch (err) {
-      provider.emitError(PeerErrorType.WebRTC, err);
-      logger.log("Failed to handleCandidate, ", err);
+        try {
+        await peerConnection.addIceCandidate(
+            new RTCIceCandidate({
+            sdpMid: sdpMid,
+            sdpMLineIndex: sdpMLineIndex,
+            candidate: candidate
+            })
+        );
+        logger.log(`Added ICE candidate for:${this.connection.peer}`);
+        } catch (err) {
+        provider.emitError(PeerErrorType.WebRTC, err);
+        logger.log("Failed to handleCandidate, ", err);
+        }
+    } else {    // candidates comes too early
+        logger.log('The candidate comes before remote description is set, cache it to handle later');
+        this.earlyCandidates.push(ice);
     }
   }
 
