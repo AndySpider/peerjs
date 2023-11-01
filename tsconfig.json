@@ -1,10 +1,14 @@
 {
-  "compilerOptions": {
-    "target": "es5",
-    "module": "commonjs",
-    "downlevelIteration": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "skipLibCheck": true
-  }
+	"compilerOptions": {
+		"target": "es5",
+		"module": "commonjs",
+		"downlevelIteration": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"skipLibCheck": true,
+		"isolatedModules": true,
+		"resolveJsonModule": true,
+		"lib": ["es2020", "dom"]
+	},
+	"exclude": ["node_modules", "dist", "e2e"]
 }

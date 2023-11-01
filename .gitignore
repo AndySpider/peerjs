@@ -1,4 +1,5 @@
 lib-cov
+coverage
 *.seed
 *.log
 *.csv
@@ -7,17 +8,20 @@ lib-cov
 *.pid
 *.[t]gz
 
+dist
 pids
 logs
 results
 demo
 bower.json
 node_modules
-.cache
+.parcel-cache
 .idea
 npm-debug.log
+.DS_STORE
 
 test/output
+browserstack.err
 .tscache
 test/public
 .vscode/
